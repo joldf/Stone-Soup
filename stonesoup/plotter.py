@@ -9,6 +9,7 @@ from matplotlib.legend_handler import HandlerPatch
 
 from .types import detection
 from .models.base import LinearModel, NonLinearModel
+from .types.update import ParticleStateUpdate
 
 
 class Plotter:
@@ -209,9 +210,15 @@ class Plotter:
         # Plot tracks
         track_colors = {}
         for track in tracks:
-            line = self.ax.plot([state.state_vector[mapping[0]] for state in track],
-                                [state.state_vector[mapping[1]] for state in track],
-                                **tracks_kwargs)
+            try:
+                line = self.ax.plot([state.mean[mapping[0]] for state in track],
+                                    [state.mean[mapping[1]] for state in track],
+                                    **tracks_kwargs)
+            except:
+                line = self.ax.plot([state.state_vector[mapping[0]] for state in track],
+                                    [state.state_vector[mapping[1]] for state in track],
+                                    **tracks_kwargs)
+                continue
             track_colors[track] = plt.getp(line[0], 'color')
 
         # Assuming a single track or all plotted as the same colour then the following will work.
@@ -224,7 +231,24 @@ class Plotter:
         self.handles_list.append(track_handle)
         self.labels_list.append(track_label)
 
-        if uncertainty:
+        if particle:
+            # Plot particles
+            for track in tracks:
+                for state in track:
+                    data = state.state_vector[mapping[:2], :]
+                    self.ax.plot(data[0], data[1], linestyle='', marker=".",
+                                 markersize=1, alpha=0.5, zorder=0)
+
+            # Generate legend items for particles
+            particle_handle = Line2D([], [], linestyle='', color="black", marker='.', markersize=1)
+            particle_label = "Particles"
+            self.handles_list.append(particle_handle)
+            self.labels_list.append(particle_label)
+
+            # Generate legend
+            self.ax.legend(handles=self.handles_list, labels=self.labels_list)
+
+        elif uncertainty:
             # Plot uncertainty ellipses
             for track in tracks:
                 HH = np.eye(track.ndim)[mapping, :]  # Get position mapping matrix
@@ -250,23 +274,6 @@ class Plotter:
             # Generate legend
             self.ax.legend(handles=self.handles_list, labels=self.labels_list,
                            handler_map={Ellipse: _HandlerEllipse()})
-
-        elif particle:
-            # Plot particles
-            for track in tracks:
-                for state in track:
-                    data = state.particles.state_vector[mapping[:2], :]
-                    self.ax.plot(data[0], data[1], linestyle='', marker=".",
-                                 markersize=1, alpha=0.5)
-
-            # Generate legend items for particles
-            particle_handle = Line2D([], [], linestyle='', color="black", marker='.', markersize=1)
-            particle_label = "Particles"
-            self.handles_list.append(particle_handle)
-            self.labels_list.append(particle_label)
-
-            # Generate legend
-            self.ax.legend(handles=self.handles_list, labels=self.labels_list)
 
         else:
             self.ax.legend(handles=self.handles_list, labels=self.labels_list)
