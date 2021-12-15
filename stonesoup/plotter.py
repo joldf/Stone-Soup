@@ -9,7 +9,6 @@ from matplotlib.legend_handler import HandlerPatch
 
 from .types import detection
 from .models.base import LinearModel, NonLinearModel
-from .types.update import ParticleStateUpdate
 
 
 class Plotter:
@@ -214,7 +213,7 @@ class Plotter:
                 line = self.ax.plot([state.mean[mapping[0]] for state in track],
                                     [state.mean[mapping[1]] for state in track],
                                     **tracks_kwargs)
-            except:
+            except AttributeError:  # I think this is the appropriate error
                 line = self.ax.plot([state.state_vector[mapping[0]] for state in track],
                                     [state.state_vector[mapping[1]] for state in track],
                                     **tracks_kwargs)
